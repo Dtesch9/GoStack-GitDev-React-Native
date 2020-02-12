@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { ActivityIndicator } from 'react-native';
 import api from '../../services/api';
 
 import {
@@ -29,6 +30,8 @@ export default class User extends Component {
 
   state = {
     stars: [],
+    page: 1,
+    loading: true,
   };
 
   async componentDidMount() {
@@ -37,12 +40,36 @@ export default class User extends Component {
 
     const response = await api.get(`/users/${user.login}/starred`);
 
-    this.setState({ stars: response.data });
+    this.setState({
+      stars: response.data,
+      loading: false,
+    });
   }
+
+  loadMore = async () => {
+    const { page, stars } = this.state;
+    const { navigation } = this.props;
+    const user = navigation.getParam('user');
+
+    const nextPage = page + 1;
+
+    const response = await api.get(`/users/${user.login}/starred`, {
+      params: {
+        page: nextPage,
+      },
+    });
+
+    if (response.data.length > 1) {
+      this.setState({
+        stars: [...stars, response.data],
+        page: nextPage,
+      });
+    }
+  };
 
   render() {
     const { navigation } = this.props;
-    const { stars } = this.state;
+    const { stars, loading } = this.state;
 
     const user = navigation.getParam('user');
 
@@ -54,19 +81,31 @@ export default class User extends Component {
           <Bio>{user.bio}</Bio>
         </Header>
 
-        <Stars
-          data={stars}
-          keyExtractor={star => String(star.id)}
-          renderItem={({ item }) => (
-            <Starred>
-              <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
-              <Info>
-                <Title>{item.name}</Title>
-                <Author>{item.owner.login}</Author>
-              </Info>
-            </Starred>
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator color="#999" marginTop={100} size={50} />
+        ) : (
+          <Stars
+            data={stars}
+            onEndReachedThreshold={0.2}
+            onEndReached={this.loadMore}
+            keyExtractor={star => String(star.id)}
+            renderItem={({ item }) => (
+              <Starred>
+                <OwnerAvatar
+                  source={{
+                    uri: item.owner.avatar_url
+                      ? item.owner.avatar_url
+                      : 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',
+                  }}
+                />
+                <Info>
+                  <Title>{item.name}</Title>
+                  <Author>{item.owner.login}</Author>
+                </Info>
+              </Starred>
+            )}
+          />
+        )}
       </Container>
     );
   }

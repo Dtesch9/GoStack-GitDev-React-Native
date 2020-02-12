@@ -17,6 +17,7 @@ import {
   Bio,
   ProfileButton,
   ProfileButtonText,
+  CloseButton,
 } from './styles';
 
 export default class Main extends Component {
@@ -30,6 +31,7 @@ export default class Main extends Component {
     newUser: '',
     users: [],
     loading: false,
+    error: false,
   };
 
   async componentDidMount() {
@@ -49,26 +51,45 @@ export default class Main extends Component {
   }
 
   handleAddUser = async () => {
-    const { users, newUser } = this.state;
+    try {
+      const { users, newUser } = this.state;
 
-    this.setState({ loading: true });
+      this.setState({ loading: true });
 
-    const response = await api.get(`/users/${newUser}`);
+      users.forEach(user => {
+        if (user.login === newUser) {
+          throw new Error('Usuário duplicado');
+        }
+      });
 
-    const data = {
-      name: response.data.name,
-      login: response.data.login,
-      bio: response.data.bio,
-      avatar: response.data.avatar_url,
-    };
+      const response = await api.get(`/users/${newUser}`);
 
-    this.setState({
-      users: [...users, data],
-      newUser: '',
-      loading: false,
-    });
+      const data = {
+        name: response.data.name,
+        login: response.data.login,
+        bio: response.data.bio,
+        avatar: response.data.avatar_url,
+      };
 
-    Keyboard.dismiss();
+      this.setState({
+        users: [...users, data],
+        newUser: '',
+        loading: false,
+      });
+
+      Keyboard.dismiss();
+    } catch (error) {
+      this.setState({
+        error: true,
+        loading: false,
+      });
+    }
+  };
+
+  handleDelete = async user => {
+    const { users } = this.state;
+
+    this.setState({ users: users.filter(u => u !== user) });
   };
 
   handleNavigate = user => {
@@ -82,7 +103,7 @@ export default class Main extends Component {
   };
 
   render() {
-    const { users, newUser, loading } = this.state;
+    const { users, newUser, loading, error } = this.state;
 
     return (
       <Container backgroundColor="#fff">
@@ -95,6 +116,7 @@ export default class Main extends Component {
             onChangeText={text => this.setState({ newUser: text })}
             returnKeyType="send"
             onSubmitEditing={this.handleAddUser}
+            error={error}
           />
 
           <SubmitButton loading={loading} onPress={this.handleAddUser}>
@@ -114,6 +136,9 @@ export default class Main extends Component {
             keyExtractor={user => user.login}
             renderItem={({ item }) => (
               <User>
+                <CloseButton onPress={() => this.handleDelete(item)}>
+                  <Icon name="cancel" size={20} color="#7159c1" />
+                </CloseButton>
                 <Avatar source={{ uri: item.avatar }} />
                 <Name>{item.name}</Name>
                 <Bio>{item.bio}</Bio>

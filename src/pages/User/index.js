@@ -24,6 +24,7 @@ export default class User extends Component {
 
   static propTypes = {
     navigation: PropTypes.shape({
+      navigate: PropTypes.func,
       getParam: PropTypes.func,
     }).isRequired,
   };
@@ -33,6 +34,7 @@ export default class User extends Component {
     page: 1,
     loading: true,
     loadingList: false,
+    refreshing: false,
   };
 
   async componentDidMount() {
@@ -47,26 +49,42 @@ export default class User extends Component {
     });
   }
 
-  loadMore = async () => {
+  refreshList = () => {
+    this.setState({ refreshing: true });
+
+    this.load();
+  };
+
+  load = async (page = 1) => {
     this.setState({ loadingList: true });
 
-    const { page, stars } = this.state;
+    const { stars } = this.state;
     const { navigation } = this.props;
     const user = navigation.getParam('user');
 
-    const nextPage = page + 1;
-
     const response = await api.get(`/users/${user.login}/starred`, {
       params: {
-        page: nextPage,
+        page,
       },
     });
 
     this.setState({
-      stars: response.data !== '' && [...stars, ...response.data],
-      page: nextPage,
+      stars:
+        response.data && page > 1
+          ? [...stars, ...response.data]
+          : response.data,
+      page,
       loadingList: false,
+      refreshing: false,
     });
+  };
+
+  loadMore = () => {
+    const { page } = this.state;
+
+    const nextPage = page + 1;
+
+    this.load(nextPage);
   };
 
   renderFooter = () => {
@@ -75,9 +93,16 @@ export default class User extends Component {
     return loadingList && <ActivityIndicator color="#999" size={50} />;
   };
 
+  handleNavigate = repository => {
+    console.tron.log('click');
+    const { navigation } = this.props;
+
+    navigation.navigate('Repository', repository);
+  };
+
   render() {
     const { navigation } = this.props;
-    const { stars, loading } = this.state;
+    const { stars, loading, refreshing } = this.state;
 
     const user = navigation.getParam('user');
 
@@ -94,11 +119,13 @@ export default class User extends Component {
         ) : (
           <Stars
             data={stars}
+            onRefresh={this.refreshList}
+            refreshing={refreshing}
             onEndReachedThreshold={0.2}
             onEndReached={this.loadMore}
             keyExtractor={star => String(star.id)}
             renderItem={({ item }) => (
-              <Starred>
+              <Starred onPress={this.handleNavigate}>
                 <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
                 <Info>
                   <Title>{item.name}</Title>

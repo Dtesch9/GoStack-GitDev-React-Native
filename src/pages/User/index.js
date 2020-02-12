@@ -69,10 +69,7 @@ export default class User extends Component {
     });
 
     this.setState({
-      stars:
-        response.data && page > 1
-          ? [...stars, ...response.data]
-          : response.data,
+      stars: page > 1 ? [...stars, ...response.data] : response.data,
       page,
       loadingList: false,
       refreshing: false,
@@ -94,10 +91,9 @@ export default class User extends Component {
   };
 
   handleNavigate = repository => {
-    console.tron.log('click');
     const { navigation } = this.props;
 
-    navigation.navigate('Repository', repository);
+    navigation.navigate('Repository', { repository });
   };
 
   render() {
@@ -125,7 +121,7 @@ export default class User extends Component {
             onEndReached={this.loadMore}
             keyExtractor={star => String(star.id)}
             renderItem={({ item }) => (
-              <Starred onPress={this.handleNavigate}>
+              <Starred onTouchEndCapture={() => this.handleNavigate(item)}>
                 <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
                 <Info>
                   <Title>{item.name}</Title>

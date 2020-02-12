@@ -91,13 +91,7 @@ export default class User extends Component {
             keyExtractor={star => String(star.id)}
             renderItem={({ item }) => (
               <Starred>
-                <OwnerAvatar
-                  source={{
-                    uri: item.owner.avatar_url
-                      ? item.owner.avatar_url
-                      : 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',
-                  }}
-                />
+                <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
                 <Info>
                   <Title>{item.name}</Title>
                   <Author>{item.owner.login}</Author>

@@ -32,6 +32,7 @@ export default class User extends Component {
     stars: [],
     page: 1,
     loading: true,
+    loadingList: false,
   };
 
   async componentDidMount() {
@@ -47,6 +48,8 @@ export default class User extends Component {
   }
 
   loadMore = async () => {
+    this.setState({ loadingList: true });
+
     const { page, stars } = this.state;
     const { navigation } = this.props;
     const user = navigation.getParam('user');
@@ -59,12 +62,17 @@ export default class User extends Component {
       },
     });
 
-    if (response.data.length > 1) {
-      this.setState({
-        stars: [...stars, response.data],
-        page: nextPage,
-      });
-    }
+    this.setState({
+      stars: response.data !== '' && [...stars, ...response.data],
+      page: nextPage,
+      loadingList: false,
+    });
+  };
+
+  renderFooter = () => {
+    const { loadingList } = this.state;
+
+    return loadingList && <ActivityIndicator color="#999" size={50} />;
   };
 
   render() {
@@ -98,6 +106,7 @@ export default class User extends Component {
                 </Info>
               </Starred>
             )}
+            ListFooterComponent={this.renderFooter}
           />
         )}
       </Container>

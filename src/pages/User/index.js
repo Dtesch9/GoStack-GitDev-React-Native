@@ -77,11 +77,13 @@ export default class User extends Component {
   };
 
   loadMore = () => {
-    const { page } = this.state;
+    const { page, stars } = this.state;
 
     const nextPage = page + 1;
 
-    this.load(nextPage);
+    if (stars.length > 10) {
+      this.load(nextPage);
+    }
   };
 
   renderFooter = () => {
